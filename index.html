@@ -1,128 +1,296 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>MindAR Image Tracking Demo</title>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/dist/mindar-image-aframe.prod.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindAR Demo - Image Tracking</title>
+    
+    <!-- MindAR and A-Frame Scripts -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
         }
         
-        .loading {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 18px;
-            z-index: 2;
-        }
-        
-        .instructions {
-            position: absolute;
+        #instructions {
+            position: fixed;
             top: 10px;
             left: 10px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 300px;
+            z-index: 1000;
+            font-size: 14px;
+        }
+        
+        #instructions h3 {
+            margin: 0 0 10px 0;
+            color: #00ffff;
+        }
+        
+        #instructions ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        #instructions .target-image {
+            width: 150px;
+            height: auto;
+            border: 2px solid #00ffff;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        #toggle-instructions {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #00ffff;
+            color: black;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1001;
+            font-weight: bold;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #status {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 10px;
             border-radius: 5px;
-            font-size: 14px;
-            z-index: 1;
-            max-width: 200px;
+            z-index: 1000;
         }
         
-        .target-image {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            width: 100px;
-            height: 100px;
-            border: 2px solid white;
-            border-radius: 5px;
-            z-index: 1;
-        }
+        .status-ready { color: #00ff00; }
+        .status-found { color: #ffff00; }
+        .status-lost { color: #ff6600; }
     </style>
 </head>
 <body>
-    <div class="loading" id="loading">
-        Loading MindAR...
+    <!-- Instructions Panel -->
+    <div id="instructions">
+        <h3>📱 MindAR Demo Instructions</h3>
+        <ul>
+            <li>Allow camera access when prompted</li>
+            <li>Point your camera at the target image below</li>
+            <li>You should see a 3D model appear on the image</li>
+            <li>Move around to test tracking quality</li>
+        </ul>
+        
+        <p><strong>Target Image:</strong></p>
+        <img class="target-image" 
+             src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" 
+             alt="Target Image - Print this or display on another device">
+        
+        <p><small>💡 Print this image or display it on another device for best results. The image should be well-lit and flat.</small></p>
     </div>
     
-    <div class="instructions">
-        Point your camera at the target image shown in the bottom right corner
+    <button id="toggle-instructions" onclick="toggleInstructions()">Hide Info</button>
+    
+    <!-- Status Display -->
+    <div id="status">
+        <span id="status-text">Loading AR...</span>
     </div>
-    
-    <!-- Target image for reference -->
-    <img class="target-image" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/card.png" alt="Target">
-    
+
+    <!-- A-Frame AR Scene -->
     <a-scene 
-        mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/card.mind; filterMinCF:0.001; filterBeta: 0.01;"
+        mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind;
+                     filterMinCF: 0.001; 
+                     filterBeta: 1000;
+                     warmupTolerance: 5;
+                     missTolerance: 5;" 
         color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights" 
         vr-mode-ui="enabled: false" 
-        device-orientation-permission-ui="enabled: false">
+        device-orientation-permission-ui="enabled: false"
+        background="color: #000000">
         
+        <!-- Assets -->
         <a-assets>
-            <a-asset-item id="raccoonModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/softmind/scene.gltf"></a-asset-item>
+            <!-- Target card image -->
+            <img id="card" 
+                 src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
+            
+            <!-- 3D Model -->
+            <a-asset-item id="avatarModel" 
+                          src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/softmind/scene.gltf">
+            </a-asset-item>
         </a-assets>
 
-        <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .clickable"></a-camera>
+        <!-- Camera -->
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <!-- Target 0 - this corresponds to the first image in the .mind file -->
-        <a-entity id="mytarget" mindar-image-target="targetIndex: 0">
-            <!-- 3D Model that appears on the image -->
+        <!-- AR Target Entity -->
+        <a-entity id="target-entity" mindar-image-target="targetIndex: 0">
+            
+            <!-- 3D Model with Animation -->
             <a-gltf-model 
-                rotation="0 0 0" 
+                id="avatar"
+                src="#avatarModel"
                 position="0 0 0.1" 
                 scale="0.005 0.005 0.005"
-                src="#raccoonModel"
-                animation="property: rotation; to: 0 360 0; loop: true; dur: 20000">
+                rotation="0 0 0"
+                animation="property: rotation; 
+                          to: 0 360 0; 
+                          loop: true; 
+                          dur: 8000; 
+                          easing: linear">
             </a-gltf-model>
             
-            <!-- Text that appears above the model -->
+            <!-- Glowing base platform -->
+            <a-cylinder 
+                color="#00ffff" 
+                opacity="0.6"
+                position="0 -0.05 0"
+                radius="0.3" 
+                height="0.02"
+                animation="property: material.opacity; 
+                          to: 0.2; 
+                          direction: alternate; 
+                          loop: true; 
+                          dur: 2000">
+            </a-cylinder>
+            
+            <!-- Floating particles effect -->
+            <a-sphere 
+                color="#ffffff" 
+                opacity="0.8"
+                position="0.2 0.3 0.2" 
+                radius="0.02"
+                animation="property: position; 
+                          to: -0.2 0.5 -0.2; 
+                          direction: alternate; 
+                          loop: true; 
+                          dur: 3000; 
+                          easing: easeInOutSine">
+            </a-sphere>
+            
+            <a-sphere 
+                color="#ffff00" 
+                opacity="0.6"
+                position="-0.15 0.2 0.15" 
+                radius="0.015"
+                animation="property: position; 
+                          to: 0.15 0.4 -0.15; 
+                          direction: alternate; 
+                          loop: true; 
+                          dur: 4000; 
+                          easing: easeInOutSine">
+            </a-sphere>
+            
+            <!-- Text label -->
             <a-text 
-                value="Hello from MindAR!" 
-                position="0 0.5 0" 
-                color="red" 
-                align="center"
-                animation="property: position; to: 0 0.8 0; dir: alternate; dur: 2000; loop: true">
+                value="MindAR Demo\nTracking Active!" 
+                position="0 0.4 0" 
+                align="center" 
+                color="#00ffff"
+                scale="0.3 0.3 0.3"
+                animation="property: scale; 
+                          to: 0.35 0.35 0.35; 
+                          direction: alternate; 
+                          loop: true; 
+                          dur: 1500">
             </a-text>
             
-            <!-- Box that bounces -->
-            <a-box 
-                position="0.3 0.2 0" 
-                material="color: blue;" 
-                animation="property: rotation; to: 360 360 360; loop: true; dur: 3000">
-            </a-box>
         </a-entity>
+
+        <!-- Ambient lighting -->
+        <a-light type="ambient" color="#404040" intensity="0.4"></a-light>
+        
+        <!-- Directional light -->
+        <a-light 
+            type="directional" 
+            position="1 1 1" 
+            color="#ffffff" 
+            intensity="0.8"
+            light="castShadow: true">
+        </a-light>
+
     </a-scene>
 
     <script>
-        // Hide loading screen when MindAR is ready
-        document.querySelector('a-scene').addEventListener('renderstart', function () {
-            document.getElementById('loading').style.display = 'none';
+        let instructionsVisible = true;
+        
+        function toggleInstructions() {
+            const instructions = document.getElementById('instructions');
+            const button = document.getElementById('toggle-instructions');
+            
+            if (instructionsVisible) {
+                instructions.classList.add('hidden');
+                button.textContent = 'Show Info';
+                instructionsVisible = false;
+            } else {
+                instructions.classList.remove('hidden');
+                button.textContent = 'Hide Info';
+                instructionsVisible = true;
+            }
+        }
+        
+        // Status tracking
+        const statusText = document.getElementById('status-text');
+        const targetEntity = document.getElementById('target-entity');
+        
+        // Listen for AR events
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // MindAR ready
+            const sceneEl = document.querySelector('a-scene');
+            
+            sceneEl.addEventListener('renderstart', function() {
+                statusText.textContent = 'AR Ready - Point camera at target image';
+                statusText.className = 'status-ready';
+            });
+            
+            // Target found
+            targetEntity.addEventListener('targetFound', function() {
+                statusText.textContent = 'Target Found! 🎯';
+                statusText.className = 'status-found';
+                console.log('Target found!');
+            });
+            
+            // Target lost  
+            targetEntity.addEventListener('targetLost', function() {
+                statusText.textContent = 'Target Lost - Keep image in view';
+                statusText.className = 'status-lost';
+                console.log('Target lost!');
+            });
+            
         });
         
-        // Optional: Log tracking events
-        const target = document.querySelector('#mytarget');
-        target.addEventListener('targetFound', event => {
-            console.log('Target found');
-        });
-        target.addEventListener('targetLost', event => {
-            console.log('Target lost');
-        });
+        // Auto-hide instructions after 10 seconds
+        setTimeout(function() {
+            if (instructionsVisible) {
+                toggleInstructions();
+            }
+        }, 10000);
+        
+        // Performance monitoring
+        let frameCount = 0;
+        let startTime = Date.now();
+        
+        setInterval(function() {
+            frameCount++;
+            if (frameCount % 60 === 0) {
+                const fps = Math.round(60000 / (Date.now() - startTime));
+                console.log(`FPS: ${fps}`);
+                startTime = Date.now();
+            }
+        }, 16);
+        
     </script>
 </body>
 </html>
