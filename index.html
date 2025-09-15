@@ -13,6 +13,20 @@
         body {
             margin: 0;
             font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        /* Ensure camera video is visible */
+        a-scene {
+            width: 100vw !important;
+            height: 100vh !important;
+        }
+        
+        /* Force video element to be visible */
+        video {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
         #instructions {
@@ -117,7 +131,9 @@
         renderer="colorManagement: true, physicallyCorrectLights" 
         vr-mode-ui="enabled: false" 
         device-orientation-permission-ui="enabled: false"
-        background="color: #000000">
+        embedded
+        style="width: 100%; height: 100%;"
+        background="transparent: true";
         
         <!-- Assets -->
         <a-assets>
@@ -253,6 +269,42 @@
             sceneEl.addEventListener('renderstart', function() {
                 statusText.textContent = 'AR Ready - Point camera at target image';
                 statusText.className = 'status-ready';
+                
+                // Force video visibility after scene loads
+                setTimeout(() => {
+                    const videos = document.querySelectorAll('video');
+                    videos.forEach(video => {
+                        video.style.display = 'block';
+                        video.style.visibility = 'visible';
+                        video.style.opacity = '1';
+                        video.style.zIndex = '-1';
+                    });
+                }, 1000);
+            });
+            
+            // Additional camera initialization
+            sceneEl.addEventListener('loaded', function() {
+                console.log('Scene loaded');
+                
+                // Ensure camera feed is visible
+                setTimeout(() => {
+                    const canvas = document.querySelector('canvas');
+                    if (canvas) {
+                        canvas.style.display = 'block';
+                        canvas.style.visibility = 'visible';
+                    }
+                    
+                    // Check for video elements and make them visible
+                    const videos = document.querySelectorAll('video');
+                    console.log('Found video elements:', videos.length);
+                    videos.forEach((video, index) => {
+                        console.log(`Video ${index}:`, video);
+                        video.style.display = 'block !important';
+                        video.style.visibility = 'visible !important';
+                        video.style.opacity = '1 !important';
+                        video.play().catch(e => console.log('Video play error:', e));
+                    });
+                }, 2000);
             });
             
             // Target found
