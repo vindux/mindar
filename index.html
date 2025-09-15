@@ -68,17 +68,13 @@
     <img class="target-image" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/card.png" alt="Target">
     
     <a-scene 
-        mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/npm/mind-ar@1.1.4/examples/image-tracking/assets/card-example/card.mind; filterMinCF:0.001; filterBeta: 0.01;"
+        mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/card.mind; filterMinCF:0.001; filterBeta: 0.01;"
         color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights" 
         vr-mode-ui="enabled: false" 
-        device-orientation-permission-ui="enabled: false"
-        embedded
-        arjs="debugUIEnabled: false;"
-        gesture-detector>
+        device-orientation-permission-ui="enabled: false">
         
         <a-assets>
-            <!-- You can replace this with your own 3D model -->
             <a-asset-item id="raccoonModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/examples/image-tracking/assets/card-example/softmind/scene.gltf"></a-asset-item>
         </a-assets>
 
