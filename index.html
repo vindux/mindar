@@ -137,12 +137,14 @@
         
         <!-- Assets -->
         <a-assets>
-            <!-- Target card image -->
+            <!-- Target card image with crossorigin -->
             <img id="card" 
+                 crossorigin="anonymous"
                  src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.png" />
             
             <!-- 3D Model -->
             <a-asset-item id="avatarModel" 
+                          crossorigin="anonymous"
                           src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/softmind/scene.gltf">
             </a-asset-item>
         </a-assets>
@@ -176,7 +178,7 @@
                 height="0.02"
                 animation="property: material.opacity; 
                           to: 0.2; 
-                          direction: alternate; 
+                          dir: alternate; 
                           loop: true; 
                           dur: 2000">
             </a-cylinder>
@@ -189,7 +191,7 @@
                 radius="0.02"
                 animation="property: position; 
                           to: -0.2 0.5 -0.2; 
-                          direction: alternate; 
+                          dir: alternate; 
                           loop: true; 
                           dur: 3000; 
                           easing: easeInOutSine">
@@ -202,7 +204,7 @@
                 radius="0.015"
                 animation="property: position; 
                           to: 0.15 0.4 -0.15; 
-                          direction: alternate; 
+                          dir: alternate; 
                           loop: true; 
                           dur: 4000; 
                           easing: easeInOutSine">
@@ -217,7 +219,7 @@
                 scale="0.3 0.3 0.3"
                 animation="property: scale; 
                           to: 0.35 0.35 0.35; 
-                          direction: alternate; 
+                          dir: alternate; 
                           loop: true; 
                           dur: 1500">
             </a-text>
@@ -260,11 +262,57 @@
         const statusText = document.getElementById('status-text');
         const targetEntity = document.getElementById('target-entity');
         
-        // Listen for AR events
+        // Listen for AR events and camera debugging
         document.addEventListener('DOMContentLoaded', function() {
             
             // MindAR ready
             const sceneEl = document.querySelector('a-scene');
+            
+            // Debug camera access
+            console.log('Starting camera debugging...');
+            
+            // Check if getUserMedia is available
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                console.log('getUserMedia is available');
+                
+                // Test camera access directly
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        console.log('Camera access successful:', stream);
+                        
+                        // Create a test video element to verify camera works
+                        const testVideo = document.createElement('video');
+                        testVideo.srcObject = stream;
+                        testVideo.style.position = 'fixed';
+                        testVideo.style.top = '0';
+                        testVideo.style.left = '0';
+                        testVideo.style.width = '200px';
+                        testVideo.style.height = '150px';
+                        testVideo.style.zIndex = '9999';
+                        testVideo.style.border = '2px solid red';
+                        testVideo.autoplay = true;
+                        testVideo.muted = true;
+                        
+                        // Add test video to page temporarily
+                        document.body.appendChild(testVideo);
+                        
+                        // Remove test video after 5 seconds
+                        setTimeout(() => {
+                            document.body.removeChild(testVideo);
+                            stream.getTracks().forEach(track => track.stop());
+                        }, 5000);
+                        
+                    })
+                    .catch(function(error) {
+                        console.error('Camera access failed:', error);
+                        statusText.textContent = 'Camera Error: ' + error.message;
+                        statusText.className = 'status-lost';
+                    });
+            } else {
+                console.error('getUserMedia not supported');
+                statusText.textContent = 'Camera not supported in this browser';
+                statusText.className = 'status-lost';
+            }
             
             sceneEl.addEventListener('renderstart', function() {
                 statusText.textContent = 'AR Ready - Point camera at target image';
@@ -273,7 +321,18 @@
                 // Force video visibility after scene loads
                 setTimeout(() => {
                     const videos = document.querySelectorAll('video');
-                    videos.forEach(video => {
+                    console.log('Found video elements after renderstart:', videos.length);
+                    videos.forEach((video, index) => {
+                        console.log(`Video ${index} properties:`, {
+                            display: video.style.display,
+                            visibility: video.style.visibility,
+                            opacity: video.style.opacity,
+                            srcObject: video.srcObject,
+                            videoWidth: video.videoWidth,
+                            videoHeight: video.videoHeight,
+                            readyState: video.readyState
+                        });
+                        
                         video.style.display = 'block';
                         video.style.visibility = 'visible';
                         video.style.opacity = '1';
@@ -284,26 +343,37 @@
             
             // Additional camera initialization
             sceneEl.addEventListener('loaded', function() {
-                console.log('Scene loaded');
+                console.log('Scene loaded - checking for camera elements');
                 
-                // Ensure camera feed is visible
+                // Detailed debugging of all video/canvas elements
                 setTimeout(() => {
-                    const canvas = document.querySelector('canvas');
-                    if (canvas) {
-                        canvas.style.display = 'block';
-                        canvas.style.visibility = 'visible';
-                    }
+                    const allVideos = document.querySelectorAll('video');
+                    const allCanvas = document.querySelectorAll('canvas');
                     
-                    // Check for video elements and make them visible
-                    const videos = document.querySelectorAll('video');
-                    console.log('Found video elements:', videos.length);
-                    videos.forEach((video, index) => {
-                        console.log(`Video ${index}:`, video);
-                        video.style.display = 'block !important';
-                        video.style.visibility = 'visible !important';
-                        video.style.opacity = '1 !important';
-                        video.play().catch(e => console.log('Video play error:', e));
+                    console.log('=== CAMERA DEBUG INFO ===');
+                    console.log('Video elements found:', allVideos.length);
+                    console.log('Canvas elements found:', allCanvas.length);
+                    
+                    allVideos.forEach((video, index) => {
+                        console.log(`Video ${index}:`, {
+                            src: video.src,
+                            srcObject: video.srcObject,
+                            width: video.videoWidth,
+                            height: video.videoHeight,
+                            readyState: video.readyState,
+                            paused: video.paused,
+                            style: video.style.cssText
+                        });
                     });
+                    
+                    allCanvas.forEach((canvas, index) => {
+                        console.log(`Canvas ${index}:`, {
+                            width: canvas.width,
+                            height: canvas.height,
+                            style: canvas.style.cssText
+                        });
+                    });
+                    
                 }, 2000);
             });
             
